@@ -1,4 +1,7 @@
-import { Check, Minus, Star } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import { Check, ChevronDown, Minus, Star } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
 import { Reveal } from '@/components/reveal'
 import { PLAN_TIERS, PLAN_MATRIX, type PlanCell } from '@/lib/site-data'
@@ -40,7 +43,129 @@ function Cell({ value, featured }: { value: PlanCell; featured: boolean }) {
   )
 }
 
+function CardCell({ value }: { value: PlanCell }) {
+  if (value === true) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <Check className="size-4 shrink-0 text-primary" strokeWidth={2.5} aria-hidden />
+        <span className="text-foreground">Included</span>
+      </span>
+    )
+  }
+  if (value === false) {
+    return (
+      <span className="inline-flex items-center gap-2 text-muted-foreground/60">
+        <Minus className="size-4 shrink-0" aria-hidden />
+        <span>Not included</span>
+      </span>
+    )
+  }
+  const isOptional = value === 'Optional'
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold',
+        isOptional
+          ? 'bg-accent/25 text-accent-foreground'
+          : 'bg-secondary text-secondary-foreground',
+      )}
+    >
+      {value}
+    </span>
+  )
+}
+
+function PlanCard({
+  tier,
+  index,
+  open,
+  onToggle,
+}: {
+  tier: (typeof PLAN_TIERS)[number]
+  index: number
+  open: boolean
+  onToggle: () => void
+}) {
+  return (
+    <div
+      className={cn(
+        'overflow-hidden rounded-3xl border bg-card shadow-sm transition-colors',
+        tier.featured ? 'border-primary/50' : 'border-border',
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={cn(
+          'flex w-full items-center justify-between gap-4 p-5 text-left',
+          tier.featured && 'bg-primary/8',
+        )}
+      >
+        <span>
+          {tier.featured && (
+            <span className="mb-2 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground">
+              <Star className="size-3 fill-current" aria-hidden />
+              Most popular
+            </span>
+          )}
+          <span className="block font-serif text-xl font-semibold text-foreground">
+            {tier.name}
+          </span>
+          <span
+            className={cn(
+              'mt-1 block text-xs font-medium',
+              tier.featured ? 'text-primary' : 'text-muted-foreground',
+            )}
+          >
+            {tier.positioning}
+          </span>
+          <span className="mt-2 block text-sm text-muted-foreground">{tier.summary}</span>
+        </span>
+        <ChevronDown
+          className={cn(
+            'size-5 shrink-0 text-muted-foreground transition-transform',
+            open && 'rotate-180',
+          )}
+          aria-hidden
+        />
+      </button>
+
+      {open && (
+        <div className="border-t border-border">
+          <ul className="divide-y divide-border">
+            {PLAN_MATRIX.map((row) => (
+              <li
+                key={row.feature}
+                className="flex items-center justify-between gap-4 px-5 py-3 text-sm"
+              >
+                <span className="font-medium text-foreground">{row.feature}</span>
+                <CardCell value={row.values[index]} />
+              </li>
+            ))}
+          </ul>
+          <div className="p-5">
+            <a
+              href="#contact"
+              className={cn(
+                'inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition-transform hover:-translate-y-0.5',
+                tier.featured
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-primary/40 text-primary hover:bg-primary/5',
+              )}
+            >
+              Request rates
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function Plans() {
+  const [openIndex, setOpenIndex] = useState(1)
+
   return (
     <section id="packages" className="bg-background py-20 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -51,7 +176,19 @@ export function Plans() {
           intro="Standard covers the essentials, Premium adds comfort and adventure, and Luxury brings resort stays with exclusive premium experiences. Every tier is fully coordinated on the ground by our local team."
         />
 
-        <Reveal className="mt-12">
+        <Reveal className="mt-12 space-y-3 md:hidden">
+          {PLAN_TIERS.map((tier, index) => (
+            <PlanCard
+              key={tier.name}
+              tier={tier}
+              index={index}
+              open={openIndex === index}
+              onToggle={() => setOpenIndex((current) => (current === index ? -1 : index))}
+            />
+          ))}
+        </Reveal>
+
+        <Reveal className="mt-12 hidden md:block">
           <div className="overflow-x-auto rounded-3xl border border-border bg-card shadow-sm">
             <table className="w-full min-w-[640px] border-collapse text-left">
               <caption className="sr-only">
